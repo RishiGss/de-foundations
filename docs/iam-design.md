@@ -3,21 +3,15 @@
 Living record of every identity in this programme — who/what it is, what it can touch, why it exists, and where it's used. 
 Update this in the same PR that changes any IAM-relevant resource; don't let it drift from what Terraform actually applies.
 
-**Naming convention:** `<function>-<qualifier>-sa`, lowercase,
-hyphens, ≤30 chars. Never named after the programme/learning plan
-itself — a name should be readable cold, without knowing this
-document exists.
+**Naming convention:** `<function>-<qualifier>-sa`, lowercase, hyphens, ≤30 chars. Never named after the programme/learning plan itself — a name should be readable cold, without knowing this document exists.
 
 ---
 
 ## Principle
 
-Provisioning identities, orchestration identities, and runtime
-identities are three different blast radii and must never collapse
-into one SA. An identity that creates infrastructure should not be
-the same identity that runs unattended workloads against production
-data. This is the single most common finding in real IAM security
-reviews, and it's the standard this repo holds itself to from Day 1.
+Provisioning identities, orchestration identities, and runtime identities are three different blast radii and must never collapse into one SA.  
+An identity that creates infrastructure should not be the same identity that runs unattended workloads against production data.  
+This is the single most common finding in real IAM security reviews, and it's the standard this repo holds itself to from Day 1.
 
 ---
 
@@ -71,19 +65,19 @@ reviews, and it's the standard this repo holds itself to from Day 1.
 #### GCS Buckets
 Location: asia-south1
 
-**Datalake Buckets**
-Protection: None yet — deliberately, to allow the W1 destroy/apply drill. Add `PREVENT` once real, non-trivially-re-ingestible data lands (~W5–W6).
+**Datalake Buckets**  
+Protection: None yet — deliberately, to allow the W1 destroy/apply drill. Add `PREVENT` once real, non-trivially-re-ingestible data lands (~W5–W6).  
 Bucket Names:
 - `learning-dataeng-dev-raw`
 - `learning-dataeng-dev-curated`
 
-**Airflow Logs Bucket**
-Protection: None planned — disposable operational logs
+**Airflow Logs Bucket**  
+Protection: None planned — disposable operational logs  
 Bucket Name: `learning-dataeng-dev-airflow-logs`
 
 #### BQ Datasets
-Location: asia-south1
-Protection: None — these are derived/rebuildable via Spark/dbt, protection would block routine rebuild drills (dbt schema iteration, SCD-2 redos)
+Location: asia-south1  
+Protection: None — these are derived/rebuildable via Spark/dbt, protection would block routine rebuild drills (dbt schema iteration, SCD-2 redos)  
 BQ Datasets based on Medallion Architecture:
 - `bronze`
 - `silver`
