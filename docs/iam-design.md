@@ -67,12 +67,27 @@ reviews, and it's the standard this repo holds itself to from Day 1.
 ## Data-plane resources (not identities, but scoped here for context)
 
 ### Dev Project - `learning-dataeng-dev`
-| Resource | Project | Location | Protection |
-|---|---|---|---|
-| `learning-dataeng-dev-raw` | dev | asia-south1 | None yet — deliberately, to allow the W1 destroy/apply drill. Add `PREVENT` once real, non-trivially-re-ingestible data lands (~W5–W6). |
-| `learning-dataeng-dev-curated` | dev | asia-south1 | Same as above |
-| `learning-dataeng-dev-airflow-logs` | dev | asia-south1 | None planned — disposable operational logs |
-| `bronze`, `silver`, `gold` (BQ datasets) | dev | asia-south1 | None — these are derived/rebuildable via Spark/dbt, protection would block routine rebuild drills |
+
+#### GCS Buckets
+Location: asia-south1
+
+**Datalake Buckets**
+Protection: None yet — deliberately, to allow the W1 destroy/apply drill. Add `PREVENT` once real, non-trivially-re-ingestible data lands (~W5–W6).
+Bucket Names:
+- `learning-dataeng-dev-raw`
+- `learning-dataeng-dev-curated`
+
+**Airflow Logs Bucket**
+Protection: None planned — disposable operational logs
+Bucket Name: `learning-dataeng-dev-airflow-logs`
+
+#### BQ Datasets
+Location: asia-south1
+Protection: None — these are derived/rebuildable via Spark/dbt, protection would block routine rebuild drills (dbt schema iteration, SCD-2 redos)
+BQ Datasets based on Medallion Architecture:
+- `bronze`
+- `silver`
+- `gold`
 
 ---
 
