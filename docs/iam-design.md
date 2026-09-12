@@ -24,7 +24,9 @@ This is the single most common finding in real IAM security reviews, and it's th
 | **Project** | `learning-dataeng-dev` |
 | **Created** | W1, Sat 05 Sep 2026 |
 | **Purpose** | Terraform's identity for provisioning infra in dev — buckets, datasets, and (later) networking, Pub/Sub |
-| **Roles held** | `roles/storage.admin`, `roles/bigquery.admin` |
+| **Roles held** | `roles/storage.admin`, `roles/bigquery.admin`, `roles/iam.serviceAccountAdmin`, `roles/resourcemanager.projectIamAdmin` |
+| **Why IAM-admin roles** | Provisioning includes *identity* provisioning. `storage.admin` + `bigquery.admin` alone cannot create service accounts or modify project IAM policy — discovered W2 when `dataproc-runtime-sa` creation failed with `iam.serviceAccounts.create` denied. `serviceAccountAdmin` covers creating SAs and setting IAM policy *on* an SA (the impersonation grants); `projectIamAdmin` covers project-level role bindings. |
+| **Known escalation risk** | `projectIamAdmin` means this SA can grant itself any role on the project. Accepted deliberately: this identity is only ever assumed interactively, by the operator, during a deliberate `terraform apply` — never wired into an unattended workload. That constraint is what makes the risk tolerable, and it is the reason runtime SAs get neither of these roles. |
 | **Used by** | Terraform only, via `impersonate_service_account` in `environments/dev/providers.tf` |
 | **Auth method** | Keyless impersonation. No JSON key exists. |
 | **Who can impersonate it** | `gssrishi@gmail.com` — holds `roles/iam.serviceAccountTokenCreator` scoped to this SA only, not project-wide |
