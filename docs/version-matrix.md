@@ -11,5 +11,6 @@
 | dbt-bigquery | 1.12.0 | 05/09/2026 | pypi.org/project/dbt-bigquery/#history | |
 | Terraform | 1.16.1 | 05/09/2026 | github.com/hashicorp/terraform/releases | |
 | uv | 0.11.29 | 05/09/2026 | github.com/astral-sh/uv/releases | |
-| Airflow - Google Cloud provider | 22.2.2 | 05/09/2026 | airflow.apache.org/registry/providers/google/22.4.0/ | |
+| Airflow - FAB (Flask App Builder) provider | 3.4.0 | 13/09/2026 | `docker run --rm --entrypoint python apache/airflow:3.1.8 -m pip list \| grep -E "providers-(google\|fab)"` in Airflow 3.1.8 | |
+| Airflow - Google Cloud provider | 20.0.0 | 13/09/2026 | `docker run --rm --entrypoint python apache/airflow:3.1.8 -m pip list \| grep -E "providers-(google\|fab)"` in Airflow 3.1.8 | |
 | Terraform - Google Cloud provider | 7.39.0 | 05/09/2026 | registry.terraform.io/providers/hashicorp/google/latest | |
