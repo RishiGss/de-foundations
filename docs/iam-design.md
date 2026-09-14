@@ -39,7 +39,7 @@ This is the single most common finding in real IAM security reviews, and it's th
 | **Property** | **Info** |
 |---|---|
 | **Project** | `learning-dataeng-dev` |
-| **Created** | W2, Sat 12 Sep 2026 — via `environments/dev`, not `bootstrap/` |
+| **Created** | W2, Sat 12 Sep 2026 — via Terraform |
 | **Purpose** | Least-privilege runtime identity for Dataproc Serverless batches submitted by Airflow |
 | **Project roles** | `roles/dataproc.worker`, `roles/bigquery.dataEditor`, `roles/bigquery.jobUser` |
 | **Bucket-scoped roles** | `roles/storage.objectAdmin` on `learning-dataeng-dev-raw`, `-curated`, `-airflow-logs` — granted per-bucket via `google_storage_bucket_iam_member`, deliberately not project-wide `storage.admin` |
@@ -49,6 +49,20 @@ This is the single most common finding in real IAM security reviews, and it's th
 | **Known limitation — not a scoping failure** | `roles/dataproc.worker` bundles broad, unscoped storage permissions (`storage.objects.get/list/create/delete`, `storage.buckets.get`) as an inherent property of the predefined role — confirmed via `gcloud iam roles describe roles/dataproc.worker`. Since this role must be granted at project level for Dataproc Serverless to function, this SA can read/list objects in *any* bucket in the project, including the Terraform state bucket, regardless of the bucket-scoped grants below. Bucket-scoped grants still correctly limit *write* intent to the three data buckets. Accepted trade-off — a custom role would close this gap but was judged disproportionate overhead for a solo learning environment. |
 | **Why it could access tfstate — investigation trail** | Negative test (`gcloud storage ls`/`cat` on the tfstate bucket, impersonating this SA) unexpectedly succeeded. Ruled out in order: (1) legacy bucket ACL inheritance — bucket had `uniform_bucket_level_access = true`, removing legacy Reader bindings made no difference; (2) unintended project-level role — confirmed via `gcloud projects get-iam-policy`, this SA holds only its three intended roles. Root cause confirmed via `gcloud iam roles describe roles/dataproc.worker`. |
 | **Never gets** | Any `*.admin` role, project-wide storage access, or IAM-admin roles. It runs unattended on a schedule — a bug in a DAG must not be able to delete a bucket or alter IAM. |
+
+### `airflow-orchestrator-sa`
+
+| **Property** | **Info** |
+|---|---|
+| **Project** | `learning-dataeng-dev` |
+| **Created** | W2, Mon 14 Sep 2026 — via Terraform |
+| **Purpose** | Least-privilege identity for Airflow to create and manage Dataproc serverless batches and cluster. Its role ends with job submission. |
+| **Project roles** | `roles/dataproc.editor` |
+| **Bucket-scoped roles** | None. Data access belongs entirely to `dataproc-runtime-sa`. |
+| **Who can impersonate it** | `gssrishi@gmail.com`, `roles/iam.serviceAccountTokenCreator` scoped to this SA only |
+| **Deletion protection** | `deletion_policy = "PREVENT"` |
+| **Verified capabilities** | Impersonation confirmed (token mint); serviceAccountUser on dataproc-runtime-sa confirmed via get-iam-policy; no access to GCS buckets/BigQuery data directly. |
+| **Never gets** | Any bucket or BigQuery data access — reading/writing data is `dataproc-runtime-sa`'s job, never this SA's. Deliberately holds `dataproc.editor` (broader than the tighter `dataproc.serverlessEditor`) to allow bounded cluster experimentation. |
 
 ### `dev-tf-state-bucket` (not a service account — the state backend)
 
@@ -68,7 +82,7 @@ This is the single most common finding in real IAM security reviews, and it's th
 |---|---|---|---|---|
 | `dev-tf-provisioner-sa` | ✅ W1 | `storage.admin`, `bigquery.admin`, `iam.serviceAccountAdmin`, `resourcemanager.projectIamAdmin` → +networking (W3) → +`pubsub.admin` (W9) | Terraform, dev only | `PREVENT` |
 | `dataproc-runtime-sa` | ✅ W2 | `dataproc.worker`, `bigquery.dataEditor`, `bigquery.jobUser`, `storage.objectAdmin` (bucket-scoped) | Airflow → Dataproc Serverless batches | `PREVENT` |
-| `airflow-orchestrator-sa` | W2 | `dataproc.editor`, `iam.serviceAccountUser` on `dataproc-runtime-sa` | Airflow scheduler, to submit batches | None |
+| `airflow-orchestrator-sa` | ✅ W2 | `dataproc.editor`, `iam.serviceAccountUser` on `dataproc-runtime-sa` | Airflow scheduler, to submit batches | `PREVENT` |
 | GitHub Actions WIF identity | W4 | Narrow, repo-scoped | CI pipeline only | N/A — WIF, not a standing SA |
 | `prd-tf-provisioner-sa` | W17 | Mirrors `dev-tf-provisioner-sa`'s role progression | Terraform, prod only | `PREVENT` — non-negotiable at this stage |
 
@@ -94,7 +108,7 @@ Protection: None planned — disposable operational logs
 Bucket Name: `learning-dataeng-dev-airflow-logs`
 
 #### BQ Datasets
-Location: asia-south1  
+Location: `asia-south1`  
 Protection: None — these are derived/rebuildable via Spark/dbt, protection would block routine rebuild drills (dbt schema iteration, SCD-2 redos)  
 BQ Datasets based on Medallion Architecture:
 - `bronze`
@@ -123,3 +137,4 @@ This pattern repeats identically for prod bootstrap in W17.
 | 2026-09-12 | `dataproc-runtime-sa` created — first runtime identity. Project roles + bucket-scoped `objectAdmin` on the three data buckets. |
 | 2026-09-12 | `dev-tf-provisioner-sa` granted `iam.serviceAccountAdmin` + `resourcemanager.projectIamAdmin`. Cause: creating a second SA through `environments/dev` failed — the provisioner SA could provision storage and BQ but not identities or IAM bindings. Escalation risk accepted; see the SA's own section. |
 | 2026-09-12 | Negative test on `dataproc-runtime-sa` found it can read the tfstate bucket via `roles/dataproc.worker`'s bundled storage permissions — documented as a known, accepted limitation, not a misconfiguration. |
+| 2026-09-14 | `airflow-orchestrator-sa` created — Dataproc job submitter identity. Project roles + `serviceAccountUser` on `dataproc-runtime-sa` + `serviceAccountTokenCreator` for admin user. |
